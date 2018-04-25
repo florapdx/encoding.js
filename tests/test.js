@@ -6,12 +6,9 @@ var encoding = require('../encoding');
 
 
 describe('Encoding', function() {
-  var encodings = ['SJIS', 'UTF-8', 'JIS', 'EUC-JP'];
+  var encodings = [UTF-8'];
   var urlEncoded = {
-    SJIS: '%82%B1%82%CC%83e%83L%83X%83g%82%CD%20SJIS%20%82%C5%8F%91%82%A9%82%EA%82%C4%82%A2%82%DC%82%B7%81B',
-    UTF8: '%E3%81%93%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%E3%81%AF%20UTF-8%20%E3%81%A7%E6%9B%B8%E3%81%8B%E3%82%8C%E3%81%A6%E3%81%84%E3%81%BE%E3%81%99%E3%80%82',
-    JIS: '%1B%24B%243%24N%25F%25-%259%25H%24O%1B(B%20JIS%20%1B%24B%24G%3Dq%24%2B%24l%24F%24%24%24%5E%249!%23%1B(B',
-    EUCJP: '%A4%B3%A4%CE%A5%C6%A5%AD%A5%B9%A5%C8%A4%CF%20EUC-JP%20%A4%C7%BD%F1%A4%AB%A4%EC%A4%C6%A4%A4%A4%DE%A4%B9%A1%A3'
+    UTF8: '%E3%81%93%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%E3%81%AF%20UTF-8%20%E3%81%A7%E6%9B%B8%E3%81%8B%E3%82%8C%E3%81%A6%E3%81%84%E3%81%BE%E3%81%99%E3%80%82'
   };
 
   var getExpectedName = function(name) {
@@ -44,22 +41,6 @@ describe('Encoding', function() {
       tests.unicode.push(i);
     }
     tests.surrogatePairs = [0xD844, 0xDE7B];
-
-    var jisx0208 = fs.readFileSync(__dirname + '/jis-x-0208-utf8.txt');
-    var jisx0208Len = jisx0208.length + 1;
-    tests.jisx0208 = new Buffer(jisx0208Len);
-    // Prepend an ascii character for UTF-16 detection.
-    tests.jisx0208[0] = 'a'.charCodeAt(0);
-    for (i = 1; i < jisx0208Len; i++) {
-      tests.jisx0208[i] = jisx0208[i - 1];
-    }
-    assert.deepEqual(tests.jisx0208.slice(1), jisx0208);
-
-    tests.jisx0208Array = [];
-    var len = tests.jisx0208.length;
-    for (i = 0; i < len; i++) {
-      tests.jisx0208Array.push(tests.jisx0208[i]);
-    }
     tests.ascii = 'Hello World.';
     tests.surrogatePairs2 = fs.readFileSync(__dirname + '/surrogate-pairs-utf8.txt');
 
@@ -135,19 +116,6 @@ describe('Encoding', function() {
       ];
       assert(encoding.detect(utf32le, 'utf-32'));
       assert(encoding.detect(utf32le) === 'UTF32');
-    });
-
-    it('Specifying multiple encodings', function() {
-      var unicode = 'ユニコード';
-
-      assert.equal(encoding.detect(unicode, 'UNICODE'), 'UNICODE');
-      assert.equal(encoding.detect(unicode, ['UNICODE']), 'UNICODE');
-      assert.equal(encoding.detect(unicode, {encoding: 'UNICODE'}), 'UNICODE');
-      assert.equal(encoding.detect(unicode, {encoding: ['UNICODE']}), 'UNICODE');
-      assert.equal(encoding.detect(unicode, []), false);
-      assert.equal(encoding.detect(unicode, ['UNICODE', 'ASCII']), 'UNICODE');
-      assert.equal(encoding.detect(unicode, 'ASCII, EUCJP, UNICODE'), 'UNICODE');
-      assert.equal(encoding.detect(unicode, ['SJIS', 'UTF8', 'ASCII']), false);
     });
   });
 
@@ -420,116 +388,6 @@ describe('Encoding', function() {
       assert.deepEqual(newUnicode, unicode);
     });
 
-    it('Halfwidth Katakana conversion', function() {
-      var hankana = '｡｢｣､･ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝﾞﾟ';
-      var hankanas = encoding.stringToCode(hankana);
-      assert(hankanas.length > 0);
-      assert(encoding.detect(hankanas) === 'UNICODE');
-
-      var sjis_expect = [
-        0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,
-        0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,0xBA,
-        0xBB,0xBC,0xBD,0xBE,0xBF,0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,
-        0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,0xD4,
-        0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF
-      ];
-
-      var sjis = encoding.convert(hankanas, 'SJIS', 'UNICODE');
-      assert(encoding.detect(sjis) === 'SJIS');
-      assert.deepEqual(sjis, sjis_expect);
-
-      var jis_expect = [
-        0x1B,0x28,0x49,0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x2A,
-        0x2B,0x2C,0x2D,0x2E,0x2F,0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,
-        0x38,0x39,0x3A,0x3B,0x3C,0x3D,0x3E,0x3F,0x40,0x41,0x42,0x43,0x44,
-        0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D,0x4E,0x4F,0x50,0x51,
-        0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5A,0x5B,0x5C,0x5D,0x5E,
-        0x5F,0x1B,0x28,0x42
-      ];
-      var jis = encoding.convert(hankanas, 'jis', 'unicode');
-      assert(encoding.detect(jis) === 'JIS');
-      assert.deepEqual(jis, jis_expect);
-
-      var eucjp_expect = [
-        0x8E,0xA1,0x8E,0xA2,0x8E,0xA3,0x8E,0xA4,0x8E,0xA5,0x8E,0xA6,0x8E,
-        0xA7,0x8E,0xA8,0x8E,0xA9,0x8E,0xAA,0x8E,0xAB,0x8E,0xAC,0x8E,0xAD,
-        0x8E,0xAE,0x8E,0xAF,0x8E,0xB0,0x8E,0xB1,0x8E,0xB2,0x8E,0xB3,0x8E,
-        0xB4,0x8E,0xB5,0x8E,0xB6,0x8E,0xB7,0x8E,0xB8,0x8E,0xB9,0x8E,0xBA,
-        0x8E,0xBB,0x8E,0xBC,0x8E,0xBD,0x8E,0xBE,0x8E,0xBF,0x8E,0xC0,0x8E,
-        0xC1,0x8E,0xC2,0x8E,0xC3,0x8E,0xC4,0x8E,0xC5,0x8E,0xC6,0x8E,0xC7,
-        0x8E,0xC8,0x8E,0xC9,0x8E,0xCA,0x8E,0xCB,0x8E,0xCC,0x8E,0xCD,0x8E,
-        0xCE,0x8E,0xCF,0x8E,0xD0,0x8E,0xD1,0x8E,0xD2,0x8E,0xD3,0x8E,0xD4,
-        0x8E,0xD5,0x8E,0xD6,0x8E,0xD7,0x8E,0xD8,0x8E,0xD9,0x8E,0xDA,0x8E,
-        0xDB,0x8E,0xDC,0x8E,0xDD,0x8E,0xDE,0x8E,0xDF
-      ];
-
-      var eucjp = encoding.convert(hankanas, 'eucjp', 'unicode');
-      assert(encoding.detect(eucjp) === 'EUCJP');
-      assert.deepEqual(eucjp, eucjp_expect);
-    });
-
-    it('JIS special table conversion', function() {
-      //NOTE: This characters is not completed for mojibake.
-      var chars = [
-        0x0030,0x0020,0x007E,0x0020,0x005C,0x0020,0xFFE5,0x0020,0xFF5E,
-        0x0020,0xFFE3,0x0020,0xFF02,0x0020,0x2015,0x0020,0xFFE0,0x0020,
-        0xFFE1,0x0020,0xFFE2,0x0020,0xFFE4,0x0020,0xFF07,0x0020,0x2225,
-        0x0020,0x005C,0x0020,0x002F,0x0020,0xFF3C,0x0020,0x0020,0x2116,
-        0x0020,0x3231,0x0020,0x334D,0x0020,0x0061,0x0020,0x3042,0x0020,
-        0x3087,0x0020,0xFF71,0x0020,0x30A2,0x0020,0x30A1,0x0020,0x7533,
-        0x0020,0x80FD,0x0020,0x5F0C,0x0020,0x4E9C,0x0020,0x7E3A,0x0020,
-        0x7E67,0x0020,0x4EAB,0x0020,0x7E8A,0x0020,0x8868,0x0020,0x2460,
-        0x0020,0x2170,0x0020,0x2164
-      ];
-
-      ['JIS', 'SJIS', 'EUCJP', 'UTF8'].forEach(function(encodingName) {
-        var encoded = encoding.convert(chars, {
-          to: encodingName,
-          from: 'auto'
-        });
-        assert(encoding.detect(encoded) === encodingName);
-        assert(encoded.length > 0);
-
-        var decoded = encoding.convert(encoded, {
-          to: 'unicode',
-          from: 'auto'
-        });
-        assert.deepEqual(decoded, chars);
-      });
-    });
-  });
-
-  describe('convert JIS-X-0208', function() {
-    var encodingNames = [
-      'UTF16', 'UTF16BE', 'UTF16LE', 'SJIS', 'EUCJP', 'JIS', 'UNICODE'
-    ];
-    encodingNames.forEach(function(encodingName) {
-      it('UTF8 to ' + encodingName, function() {
-        assert(tests.jisx0208.length > 0);
-        assert(encoding.detect(tests.jisx0208, 'utf-8'));
-        assert(encoding.detect(tests.jisx0208) === 'UTF8');
-        var encoded = encoding.convert(tests.jisx0208, {
-          to: encodingName,
-          from: 'utf-8'
-        });
-        assert(encoded.length > 0);
-        assert(encoding.detect(encoded, encodingName));
-
-        var detected = encoding.detect(encoded);
-        if (/^UTF16/.test(encodingName)) {
-          assert(/^UTF16/.test(detected));
-        } else {
-          assert(detected === encodingName);
-        }
-
-        var decoded = encoding.convert(encoded, {
-          to: 'utf-8',
-          from: encodingName
-        });
-        assert.deepEqual(decoded, tests.jisx0208Array);
-      });
-    });
-
     it('UTF-8 to Unicode', function() {
       var encoded = encoding.convert(tests.jisx0208, {
         to: 'unicode',
@@ -570,210 +428,7 @@ describe('Encoding', function() {
         assert.deepEqual(decoded, tests.jisx0208_unicode);
       });
     });
-
-    it('Unicode to Shift_JIS', function() {
-      var encoded = encoding.convert(tests.jisx0208, {
-        to: 'sjis',
-        from: 'utf-8'
-      });
-      assert(encoded.length > 0);
-      assert(encoding.detect(encoded, 'sjis'));
-      assert(encoding.detect(encoded) === 'SJIS');
-      tests.jisx0208_sjis = encoded;
-    });
-
-    encodingNames = [
-      'UTF16', 'UTF16BE', 'UTF16LE', 'UNICODE', 'EUCJP', 'JIS', 'UTF8'
-    ];
-    encodingNames.forEach(function(encodingName) {
-      it('SJIS to ' + encodingName, function() {
-        assert(tests.jisx0208_sjis.length > 0);
-        assert(encoding.detect(tests.jisx0208_sjis, 'sjis'));
-        assert(encoding.detect(tests.jisx0208_sjis) === 'SJIS');
-        var encoded = encoding.convert(tests.jisx0208_sjis, {
-          to: encodingName,
-          from: 'sjis'
-        });
-        assert(encoded.length > 0);
-        assert(encoding.detect(encoded, encodingName));
-
-        var detected = encoding.detect(encoded);
-        if (/^UTF16/.test(encodingName)) {
-          assert(/^UTF16/.test(detected));
-        } else {
-          assert(detected === encodingName);
-        }
-
-        var decoded = encoding.convert(encoded, {
-          to: 'sjis',
-          from: encodingName
-        });
-        assert.deepEqual(decoded, tests.jisx0208_sjis);
-      });
-    });
-
-    it('Shift_JIS to EUC-JP', function() {
-      var encoded = encoding.convert(tests.jisx0208, {
-        to: 'eucjp',
-        from: 'utf-8'
-      });
-      assert(encoded.length > 0);
-      assert(encoding.detect(encoded, 'eucjp'));
-      assert(encoding.detect(encoded) === 'EUCJP');
-      tests.jisx0208_eucjp = encoded;
-    });
-
-    encodingNames = [
-      'UTF16', 'UTF16BE', 'UTF16LE', 'UNICODE', 'SJIS', 'JIS', 'UTF8'
-    ];
-    encodingNames.forEach(function(encodingName) {
-      it('EUCJP to ' + encodingName, function() {
-        assert(tests.jisx0208_eucjp.length > 0);
-        assert(encoding.detect(tests.jisx0208_eucjp, 'eucjp'));
-        assert(encoding.detect(tests.jisx0208_eucjp) === 'EUCJP');
-        var encoded = encoding.convert(tests.jisx0208_eucjp, {
-          to: encodingName,
-          from: 'eucjp'
-        });
-        assert(encoded.length > 0);
-        assert(encoding.detect(encoded, encodingName));
-
-        var detected = encoding.detect(encoded);
-        if (/^UTF16/.test(encodingName)) {
-          assert(/^UTF16/.test(detected));
-        } else {
-          assert(detected === encodingName);
-        }
-
-        var decoded = encoding.convert(encoded, {
-          to: 'eucjp',
-          from: encodingName
-        });
-        assert.deepEqual(decoded, tests.jisx0208_eucjp);
-      });
-    });
-
-    it('EUC-JP to JIS', function() {
-      var encoded = encoding.convert(tests.jisx0208, {
-        to: 'jis',
-        from: 'utf-8'
-      });
-      assert(encoded.length > 0);
-      assert(encoding.detect(encoded, 'jis'));
-      assert(encoding.detect(encoded) === 'JIS');
-      tests.jisx0208_jis = encoded;
-    });
-
-    encodingNames = [
-      'UTF16', 'UTF16BE', 'UTF16LE', 'UNICODE', 'SJIS', 'EUCJP', 'UTF8'
-    ];
-    encodingNames.forEach(function(encodingName) {
-      it('JIS to ' + encodingName, function() {
-        assert(tests.jisx0208_jis.length > 0);
-        assert(encoding.detect(tests.jisx0208_jis, 'jis'));
-        assert(encoding.detect(tests.jisx0208_jis) === 'JIS');
-        var encoded = encoding.convert(tests.jisx0208_jis, {
-          to: encodingName,
-          from: 'jis'
-        });
-        assert(encoded.length > 0);
-        assert(encoding.detect(encoded, encodingName));
-
-        var detected = encoding.detect(encoded);
-        if (/^UTF16/.test(encodingName)) {
-          assert(/^UTF16/.test(detected));
-        } else {
-          assert(detected === encodingName);
-        }
-
-        var decoded = encoding.convert(encoded, {
-          to: 'jis',
-          from: encodingName
-        });
-        assert.deepEqual(decoded, tests.jisx0208_jis);
-      });
-    });
   });
-
-  describe('convert JIS-X-0212', function() {
-    var jisx0212_buffer = fs.readFileSync(__dirname + '/jis-x-0212-utf8.txt');
-    var jisx0212_array = [];
-    for (var i = 0, len = jisx0212_buffer.length; i < len; i++) {
-      jisx0212_array.push(jisx0212_buffer[i]);
-    }
-
-    var jisx0212_sjis_buffer = fs.readFileSync(__dirname + '/jis-x-0212-sjis-to-utf8.txt');
-    var jisx0212_sjis_array = [];
-    for (var i = 0, len = jisx0212_sjis_buffer.length; i < len; i++) {
-      jisx0212_sjis_array.push(jisx0212_sjis_buffer[i]);
-    }
-
-    it('UTF-8 to Unicode', function() {
-      var encoded = encoding.convert(jisx0212_buffer, {
-        to: 'unicode',
-        from: 'utf-8'
-      });
-      assert(encoded.length > 0);
-      assert(encoding.detect(encoded, 'unicode'));
-      assert(encoding.detect(encoded) === 'UNICODE');
-    });
-
-    it('UTF-8 to SJIS / SJIS to UTF-8', function() {
-      var encoded = encoding.convert(jisx0212_buffer, {
-        to: 'sjis',
-        from: 'utf-8'
-      });
-      assert(encoded.length > 0);
-      assert(encoding.detect(encoded, 'sjis'));
-      assert(encoding.detect(encoded) === 'SJIS');
-      var encoded_sjis_to_utf8 = encoding.convert(encoded, {
-        to: 'utf-8',
-        from: 'sjis'
-      });
-      assert.deepEqual(encoded_sjis_to_utf8, jisx0212_sjis_array);
-    });
-
-    var encodingNames = [
-      'UTF16', 'UTF16BE', 'UTF16LE', 'UNICODE', 'JIS', 'EUCJP', 'UTF8'
-    ];
-
-    encodingNames.forEach(function(encodingName1) {
-      var encoded1 = encoding.convert(jisx0212_array, {
-        to: encodingName1,
-        from: 'utf-8'
-      });
-      var detected = encoding.detect(encoded1);
-      if (/^UTF16/.test(encodingName1)) {
-        assert(/^UTF16/.test(detected));
-      } else {
-        assert(detected === encodingName1);
-      }
-
-      encodingNames.forEach(function(encodingName2) {
-        it(encodingName1 + ' to ' + encodingName2, function() {
-          var encoded2 = encoding.convert(encoded1, {
-            to: encodingName2,
-            from: encodingName1
-          });
-          assert(encoded2.length > 0);
-
-          var detected2 = encoding.detect(encoded2);
-          if (/^UTF16/.test(encodingName2)) {
-            assert(/^UTF16/.test(detected2));
-          } else {
-            assert(detected2 === encodingName2);
-          }
-
-          var decoded = encoding.convert(encoded2, {
-            to: 'utf-8',
-            from: encodingName2
-          });
-          assert.deepEqual(decoded, jisx0212_array);
-        });
-      });
-    });
-  });
-
 
   describe('urlEncode/urlDecode', function() {
     encodings.forEach(function(encodingName) {
@@ -785,7 +440,6 @@ describe('Encoding', function() {
       });
     });
   });
-
 
   describe('base64Encode/base64Decode', function() {
     encodings.forEach(function(encodingName) {
@@ -807,57 +461,13 @@ describe('Encoding', function() {
       'UCS4': 'UTF32BE',
       'UCS2': 'UTF16BE',
       'ISO 646': 'ASCII',
-      'CP367': 'ASCII',
-      'Shift_JIS': 'SJIS',
-      'x-sjis': 'SJIS',
-      'SJIS-open': 'SJIS',
-      'SJIS-win': 'SJIS',
-      'SHIFT-JIS': 'SJIS',
-      'SHIFT_JISX0213': 'SJIS',
-      'CP932': 'SJIS',
-      'Windows-31J': 'SJIS',
-      'MS-Kanji': 'SJIS',
-      'EUC-JP-MS': 'EUCJP',
-      'eucJP-MS': 'EUCJP',
-      'eucJP-open': 'EUCJP',
-      'eucJP-win': 'EUCJP',
-      'EUC-JPX0213': 'EUCJP',
-      'EUC-JP': 'EUCJP',
-      'eucJP': 'EUCJP',
-      'ISO-2022-JP': 'JIS'
+      'CP367': 'ASCII'
     };
 
     var text = getExpectedText(getExpectedName('UTF-8'));
     var data = encoding.stringToCode(text);
     assert(data.length > 0);
     assert(encoding.detect(data, 'UNICODE'));
-
-    var sjis = encoding.convert(data, 'sjis');
-    assert(sjis.length > 0);
-    assert(encoding.detect(sjis, 'SJIS'));
-
-    var eucjp = encoding.convert(data, 'EUCJP');
-    assert(eucjp.length > 0);
-    assert(encoding.detect(eucjp, 'EUCJP'));
-
-    var codes = {
-      'SJIS': sjis,
-      'EUCJP': eucjp
-    };
-
-    Object.keys(aliasNames).forEach(function(name) {
-      it(name + ' is ' + aliasNames[name], function() {
-        var encoded = encoding.convert(data, name);
-        assert(encoded.length > 0);
-        var encodingName = aliasNames[name];
-        if (encodingName in codes) {
-          var code = codes[encodingName];
-          assert(code.length > 0);
-          assert.equal(encoding.detect(code), encodingName);
-          assert.deepEqual(encoded, code);
-        }
-      });
-    });
   });
 
   describe('Result types of convert/detect', function() {
@@ -1204,166 +814,8 @@ describe('Encoding', function() {
     });
   });
 
-  describe('Japanese Zenkaku/Hankaku conversion', function() {
-    var hankakus = [
-      'Hello World! 12345',
-      '!"#$%&\'()*+,-./0123456789:;<=>?@' +
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'
-    ];
-
-    var zenkakus = [
-      'Ｈｅｌｌｏ Ｗｏｒｌｄ！ １２３４５',
-      '！＂＃＄％＆＇（）＊＋，－．／０１２３４５６７８９：；＜＝＞？＠' +
-        'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ［＼］＾＿｀ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ｛｜｝～'
-    ];
-
-    var hankanas = [
-      'ﾎﾞﾎﾟｳﾞｧｱｨｲｩｳｪｴｫｵ',
-      '､｡｢｣ﾞﾟｧｱｨｲｩｳｪｴｫｵｶｷｸｹｺｻｼｽｾｿﾀﾁｯﾂﾃﾄ' +
-      'ﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓｬﾔｭﾕｮﾖﾗﾘﾙﾚﾛﾜｦﾝｳﾞヵヶﾜﾞｦﾞ･ｰ'
-    ];
-
-    var zenkanas = [
-      'ボポヴァアィイゥウェエォオ',
-      '、。「」゛゜ァアィイゥウェエォオカキクケコサシスセソタチッツテト' +
-        'ナニヌネノハヒフヘホマミムメモャヤュユョヨラリルレロワヲンヴヵヶ\u30F7\u30FA・ー'
-    ];
-
-    var hiraganas = [
-      'ぼぽ\u3094ぁあぃいぅうぇえぉお',
-      '、。「」゛゜ぁあぃいぅうぇえぉおかきくけこさしすせそたちっつてと' +
-        'なにぬねのはひふへほまみむめもゃやゅゆょよらりるれろわをんう゛\u3094\u3095\u3096わ゛を゛・ー'
-    ];
-
-    var katakanas = [
-      'ボポヴァアィイゥウェエォオ',
-      '、。「」゛゜ァアィイゥウェエォオカキクケコサシスセソタチッツテト' +
-        'ナニヌネノハヒフヘホマミムメモャヤュユョヨラリルレロワヲンウ゛ヴヵヶ\u30F7\u30FA・ー'
-    ];
-
-    var hanspace = 'Hello World! 1 2 3 4 5';
-    var zenspace = 'Hello\u3000World!\u30001\u30002\u30003\u30004\u30005';
-
-    it('toHankakuCase', function() {
-      zenkakus.forEach(function(zenkaku, i) {
-        var expect = hankakus[i];
-        var res = encoding.toHankakuCase(zenkaku);
-        assert.equal(res, expect);
-
-        var zenkakuArray = encoding.stringToCode(zenkaku);
-        var expectArray = encoding.stringToCode(expect);
-        res = encoding.toHankakuCase(zenkakuArray);
-        assert(Array.isArray(res));
-        assert.deepEqual(res, expectArray);
-      });
-    });
-
-    it('toZenkakuCase', function() {
-      hankakus.forEach(function(hankaku, i) {
-        var expect = zenkakus[i];
-        var res = encoding.toZenkakuCase(hankaku);
-        assert.equal(res, expect);
-
-        var hankakuArray = encoding.stringToCode(hankaku);
-        var expectArray = encoding.stringToCode(expect);
-        res = encoding.toZenkakuCase(hankakuArray);
-        assert(Array.isArray(res));
-        assert.deepEqual(res, expectArray);
-      });
-    });
-
-    it('toHiraganaCase', function() {
-      katakanas.forEach(function(katakana, i) {
-        var expect = hiraganas[i];
-        var res = encoding.toHiraganaCase(katakana);
-        assert.equal(res, expect);
-
-        var zenkanaArray = encoding.stringToCode(katakana);
-        var expectArray = encoding.stringToCode(expect);
-        res = encoding.toHiraganaCase(zenkanaArray);
-        assert(Array.isArray(res));
-        assert.deepEqual(res, expectArray);
-      });
-    });
-
-    it('toKatakanaCase', function() {
-      hiraganas.forEach(function(hiragana, i) {
-        var expect = katakanas[i];
-        var res = encoding.toKatakanaCase(hiragana);
-        assert.equal(res, expect);
-
-        var hiraganaArray = encoding.stringToCode(hiragana);
-        var expectArray = encoding.stringToCode(expect);
-        res = encoding.toKatakanaCase(hiraganaArray);
-        assert(Array.isArray(res));
-        assert.deepEqual(res, expectArray);
-      });
-    });
-
-    it('toHankanaCase', function() {
-      zenkanas.forEach(function(zenkana, i) {
-        var expect = hankanas[i];
-        var res = encoding.toHankanaCase(zenkana);
-        assert.equal(res, expect);
-
-        var zenkanaArray = encoding.stringToCode(zenkana);
-        var expectArray = encoding.stringToCode(expect);
-        res = encoding.toHankanaCase(zenkanaArray);
-        assert(Array.isArray(res));
-        assert.deepEqual(res, expectArray);
-      });
-    });
-
-    it('toZenkanaCase', function() {
-      hankanas.forEach(function(hankana, i) {
-        var expect = zenkanas[i];
-        var res = encoding.toZenkanaCase(hankana);
-        assert.equal(res, expect);
-
-        var hankanaArray = encoding.stringToCode(hankana);
-        var expectArray = encoding.stringToCode(expect);
-        res = encoding.toZenkanaCase(hankanaArray);
-        assert(Array.isArray(res));
-        assert.deepEqual(res, expectArray);
-      });
-    });
-
-    it('toHankakuSpace', function() {
-      var expect = hanspace;
-      var res = encoding.toHankakuSpace(zenspace);
-      assert.equal(res, expect);
-
-      var zenspaceArray = encoding.stringToCode(zenspace);
-      var expectArray = encoding.stringToCode(expect);
-      res = encoding.toHankakuSpace(zenspaceArray);
-      assert(Array.isArray(res));
-      assert.deepEqual(res, expectArray);
-    });
-
-    it('toZenkakuSpace', function() {
-      var expect = zenspace;
-      var res = encoding.toZenkakuSpace(hanspace);
-      assert.equal(res, expect);
-
-      var hanspaceArray = encoding.stringToCode(hanspace);
-      var expectArray = encoding.stringToCode(expect);
-      res = encoding.toZenkakuSpace(hanspaceArray);
-      assert(Array.isArray(res));
-      assert.deepEqual(res, expectArray);
-    });
-  });
 
   describe('codeToString / stringToCode', function() {
-    it('Test for JISX0208', function() {
-      assert(Array.isArray(tests.jisx0208Array));
-      assert(tests.jisx0208Array.length > 0);
-
-      var string = encoding.codeToString(tests.jisx0208Array);
-      assert(typeof string === 'string');
-
-      var code = encoding.stringToCode(string);
-      assert.deepEqual(code, tests.jisx0208Array);
-    });
 
     it('Test for a long string', function() {
       this.timeout(5000);
